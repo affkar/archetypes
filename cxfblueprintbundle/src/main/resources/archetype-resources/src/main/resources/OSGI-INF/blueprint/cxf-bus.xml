@@ -1,0 +1,46 @@
+#set( $symbol_pound = '#' )
+#set( $symbol_dollar = '$' )
+#set( $symbol_escape = '\' )
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:cxf-blueprint-core="http://cxf.apache.org/blueprint/core"
+	xmlns:osgi="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+	xsi:schemaLocation="http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+						http://cxf.apache.org/blueprint/core http://cxf.apache.org/schemas/blueprint/core.xsd">
+
+<!-- 	<bean id="logInbound" class="org.apache.cxf.interceptor.LoggingInInterceptor" />
+	<bean id="logOutbound" class="org.apache.cxf.interceptor.LoggingOutInterceptor" /> -->
+
+	<reference id="InboundPerfInterceptor" interface="${package}.interceptor.api.InboundPerfPhaseInterceptor"/>
+	<reference id="OutboundPerfInterceptor" interface="${package}.interceptor.api.OutboundPerfPhaseInterceptor"/>
+	<reference id="InboundPayloadSizeInterceptor" interface="${package}.interceptor.api.InboundPayloadSizePhaseInterceptor"/>
+	
+	<cxf-blueprint-core:bus id="cxf" name="cxf" >
+		<cxf-blueprint-core:inInterceptors>
+			<ref component-id="InboundPayloadSizeInterceptor" />
+			<ref component-id="InboundPerfInterceptor" />
+		</cxf-blueprint-core:inInterceptors>
+		<cxf-blueprint-core:outInterceptors>
+			<ref component-id="OutboundPerfInterceptor" />
+		</cxf-blueprint-core:outInterceptors>
+		<cxf-blueprint-core:outFaultInterceptors>
+			<ref component-id="OutboundPerfInterceptor" />
+		</cxf-blueprint-core:outFaultInterceptors>
+	</cxf-blueprint-core:bus>
+	
+	<!-- Grab a reference to the current MBeanServer -->
+<osgi:reference id="mbeanServer" interface="javax.management.MBeanServer"	/>
+ 
+<bean id="org.apache.cxf.management.InstrumentationManager"
+  class="org.apache.cxf.management.jmx.InstrumentationManagerImpl">
+  <property name="bus" ref="cxf" />
+  <property name="enabled" value="true" />
+  <!-- Inject the reference to the MBeanServer -->
+  <property name="server" ref="mbeanServer" />
+</bean>
+
+<!-- Wiring the counter repository -->
+<bean id="CounterRepository" class="org.apache.cxf.management.counters.CounterRepository">
+    <property name="bus" ref="cxf" />
+</bean>
+</blueprint>
